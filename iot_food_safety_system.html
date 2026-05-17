@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IIFFS – Integrated IoT Framework for Food Systems</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0f0d;
+    --surface: #111915;
+    --card: #151f19;
+    --border: #1e2e24;
+    --accent1: #22c55e;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --accent4: #ef4444;
+    --text: #e2f0e8;
+    --muted: #6b8f76;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,15,13,.92);
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .logo { font-size: 13px; font-family: var(--mono); color: var(--accent1); letter-spacing: .12em; }
+  .logo span { color: var(--muted); }
+  .status-bar { display: flex; gap: 20px; }
+  .status-dot { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); color: var(--muted); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent1); animation: pulse 1.8s infinite; }
+  .dot.amber { background: var(--accent3); }
+  .dot.blue  { background: var(--accent2); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── LAYOUT ── */
+  main { max-width: 1340px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  /* ── NAV TABS ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 28px; background: var(--surface); padding: 5px; border-radius: 10px; border: 1px solid var(--border); width: fit-content; }
+  .tab { padding: 8px 20px; border-radius: 7px; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; cursor: pointer; transition: all .2s; color: var(--muted); border: none; background: transparent; }
+  .tab.active { background: var(--accent1); color: #000; font-weight: 700; }
+  .tab:hover:not(.active) { color: var(--text); background: var(--border); }
+
+  /* ── SECTION ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .section-desc { font-size: 13px; color: var(--muted); margin-bottom: 22px; font-family: var(--mono); }
+
+  /* ── GRID ── */
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-title { font-size: 11px; font-family: var(--mono); color: var(--muted); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+
+  /* ── METRIC CARD ── */
+  .metric { font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .metric-label { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .metric.green { color: var(--accent1); }
+  .metric.amber { color: var(--accent3); }
+  .metric.red   { color: var(--accent4); }
+  .metric.blue  { color: var(--accent2); }
+
+  /* ── GAUGE ── */
+  .gauge-wrap { position: relative; width: 100%; padding-top: 10px; }
+  .gauge-label { display: flex; justify-content: space-between; font-size: 11px; font-family: var(--mono); color: var(--muted); margin-bottom: 6px; }
+  .gauge-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .gauge-fill { height: 100%; border-radius: 99px; transition: width 1.2s ease; }
+  .gauge-fill.green { background: linear-gradient(90deg,#16a34a,#22c55e); }
+  .gauge-fill.amber { background: linear-gradient(90deg,#d97706,#f59e0b); }
+  .gauge-fill.red   { background: linear-gradient(90deg,#b91c1c,#ef4444); }
+  .gauge-fill.blue  { background: linear-gradient(90deg,#0284c7,#06b6d4); }
+
+  /* ── SENSOR GRID ── */
+  .sensor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 12px; }
+  .sensor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    transition: border-color .3s;
+    cursor: default;
+  }
+  .sensor-card:hover { border-color: var(--accent1); }
+  .sensor-icon { font-size: 22px; margin-bottom: 8px; }
+  .sensor-name { font-size: 11px; font-family: var(--mono); color: var(--muted); margin-bottom: 4px; }
+  .sensor-value { font-size: 20px; font-weight: 700; font-family: var(--mono); }
+  .sensor-status { font-size: 10px; margin-top: 4px; font-family: var(--mono); }
+  .sensor-status.ok { color: var(--accent1); }
+  .sensor-status.warn { color: var(--accent3); }
+  .sensor-status.alert { color: var(--accent4); }
+
+  /* ── LOG ── */
+  .log-box { background: #060c09; border: 1px solid var(--border); border-radius: 10px; padding: 16px; height: 260px; overflow-y: auto; font-family: var(--mono); font-size: 12px; }
+  .log-line { padding: 3px 0; border-bottom: 1px solid #0e160f; display: flex; gap: 10px; }
+  .log-time { color: var(--muted); min-width: 60px; }
+  .log-msg.ok   { color: var(--accent1); }
+  .log-msg.warn { color: var(--accent3); }
+  .log-msg.alert { color: var(--accent4); }
+  .log-msg.info { color: var(--accent2); }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { text-align: left; padding: 10px 12px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing:.08em; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .badge { padding: 3px 10px; border-radius: 99px; font-size: 10px; font-family: var(--mono); font-weight: 700; }
+  .badge.ok   { background: #14532d; color: #4ade80; }
+  .badge.warn { background: #451a03; color: #fbbf24; }
+  .badge.alert{ background: #450a0a; color: #f87171; }
+  .badge.trace{ background: #0c2a3a; color: #38bdf8; }
+
+  /* ── BLOCKCHAIN CHAIN ── */
+  .chain { display: flex; flex-direction: column; gap: 0; }
+  .block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    position: relative;
+    transition: border-color .3s;
+  }
+  .block:hover { border-color: var(--accent2); }
+  .block-arrow { text-align: center; color: var(--muted); font-size: 18px; line-height: 1.2; }
+  .block-hash { font-family: var(--mono); font-size: 10px; color: var(--accent2); word-break: break-all; }
+  .block-data { font-size: 12px; color: var(--text); margin: 6px 0; }
+  .block-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .block-idx { position: absolute; top: 10px; right: 14px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* ── RFID TABLE ── */
+  .rfid-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .rfid-icon { font-size: 20px; }
+  .rfid-tag { font-family: var(--mono); font-size: 11px; color: var(--accent2); }
+  .rfid-loc { font-size: 12px; flex: 1; }
+  .rfid-time { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* ── FARM MAP ── */
+  .farm-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; }
+  .farm-cell {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    border: 2px solid transparent;
+  }
+  .farm-cell:hover { transform: scale(1.12); box-shadow: 0 0 12px rgba(34,197,94,.35); border-color: var(--accent1); }
+  .farm-cell.wet   { background: #0e4023; }
+  .farm-cell.mid   { background: #1a3a12; }
+  .farm-cell.dry   { background: #3a2a08; }
+  .farm-cell.alert { background: #3a0808; border-color: var(--accent4)!important; }
+
+  /* ── KPI BAR ── */
+  .kpi-row { display: flex; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1; min-width: 150px; }
+  .kpi-val { font-size: 28px; font-weight: 800; font-family: var(--mono); }
+  .kpi-lbl { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .compare-table th { padding:10px 14px; font-family:var(--mono); font-size:11px; color:var(--muted); border-bottom:1px solid var(--border); text-align:left; }
+  .compare-table td { padding:10px 14px; border-bottom:1px solid var(--border); }
+  .compare-table td:nth-child(3) { color:var(--accent1); font-weight:700; font-family:var(--mono); }
+  .compare-table tr:last-child td { border-bottom:none; }
+  .arrow-right { color: var(--accent1); margin: 0 4px; }
+
+  /* ── SCROLL ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* ── BUTTON ── */
+  .btn { padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer; font-family: var(--mono); font-size: 12px; font-weight: 700; transition: all .2s; }
+  .btn-primary { background: var(--accent1); color: #000; }
+  .btn-primary:hover { background: #16a34a; }
+  .btn-secondary { background: var(--border); color: var(--text); }
+  .btn-secondary:hover { background: #2a3f2f; }
+  .btn-danger  { background: var(--accent4); color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+
+  /* ── ALERT BANNER ── */
+  .alert-banner { border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; font-size: 13px; display: flex; align-items: center; gap: 12px; }
+  .alert-banner.warn { background: #2d1f00; border: 1px solid #d97706; color: #fde68a; }
+  .alert-banner.danger { background: #1f0000; border: 1px solid #b91c1c; color: #fca5a5; }
+  .alert-banner.info  { background: #001a20; border: 1px solid #0284c7; color: #bae6fd; }
+
+  /* ── VERTICAL SPACER ── */
+  .spacer { margin-top: 18px; }
+
+  /* ── INLINE CODE ── */
+  code { font-family: var(--mono); background: var(--surface); padding: 1px 6px; border-radius: 4px; font-size: 11px; color: var(--accent2); }
+
+  /* ── FOOTER ── */
+  footer { border-top: 1px solid var(--border); padding: 18px 32px; font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">IIFFS <span>/ Integrated IoT Framework for Food Systems</span></div>
+  <div class="status-bar">
+    <div class="status-dot"><div class="dot"></div> Cold Chain LIVE</div>
+    <div class="status-dot"><div class="dot blue"></div> Blockchain SYNC</div>
+    <div class="status-dot"><div class="dot amber"></div> Farm Sensors ACTIVE</div>
+  </div>
+</header>
+
+<main>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview')">📊 Overview</button>
+    <button class="tab" onclick="switchTab('coldchain')">❄️ Cold Chain</button>
+    <button class="tab" onclick="switchTab('traceability')">🔗 Traceability</button>
+    <button class="tab" onclick="switchTab('precision')">🌾 Precision Agri</button>
+    <button class="tab" onclick="switchTab('sensors')">📡 Sensors</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════ OVERVIEW ═══════════════════════════════════════ -->
+  <div class="section active" id="tab-overview">
+    <div class="section-title">System Dashboard</div>
+    <div class="section-desc">IIFFS — Three-Pillar IoT Architecture for Food Safety  |  Pratham Garg, Chitkara University</div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val" style="color:var(--accent1)">−30%</div><div class="kpi-lbl">Cold Chain Spoilage</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--accent2)">−97%</div><div class="kpi-lbl">Trace Time (RFID)</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--accent3)">−30%</div><div class="kpi-lbl">Irrigation Water</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--accent4)">−25%</div><div class="kpi-lbl">Pesticide Use</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--accent1)">95–98%</div><div class="kpi-lbl">Disease Detection Acc.</div></div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title">Pillar I — Cold Chain Monitoring</div>
+        <div class="gauge-wrap">
+          <div class="gauge-label"><span>Spoilage Rate</span><span>8% (IoT) vs 12% (baseline)</span></div>
+          <div class="gauge-bar"><div class="gauge-fill green" style="width:67%"></div></div>
+        </div>
+        <div class="spacer">
+          <div class="gauge-label"><span>Excursion Detection</span><span>&lt;4 min avg</span></div>
+          <div class="gauge-bar"><div class="gauge-fill green" style="width:98%"></div></div>
+        </div>
+        <div class="spacer">
+          <div class="gauge-label"><span>Energy Savings</span><span>19%</span></div>
+          <div class="gauge-bar"><div class="gauge-fill amber" style="width:19%"></div></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:14px;font-family:var(--mono)">Sensors: DS18B20 · DHT22 · SHT31 · BME280</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pillar II — RFID-Blockchain Traceability</div>
+        <div class="gauge-wrap">
+          <div class="gauge-label"><span>Trace Speed</span><span>2.2 sec (IoT) vs 6.5 days</span></div>
+          <div class="gauge-bar"><div class="gauge-fill blue" style="width:100%"></div></div>
+        </div>
+        <div class="spacer">
+          <div class="gauge-label"><span>Blockchain Immutability</span><span>Hyperledger Fabric</span></div>
+          <div class="gauge-bar"><div class="gauge-fill blue" style="width:100%"></div></div>
+        </div>
+        <div class="spacer">
+          <div class="gauge-label"><span>Recall Precision</span><span>Lot-level targeted</span></div>
+          <div class="gauge-bar"><div class="gauge-fill blue" style="width:88%"></div></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:14px;font-family:var(--mono)">Sensors: Impinj R700 · NXP UCODE 9 · Zebra FX9600</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pillar III — Precision Agriculture</div>
+        <div class="gauge-wrap">
+          <div class="gauge-label"><span>Water Savings</span><span>30–31%</span></div>
+          <div class="gauge-bar"><div class="gauge-fill amber" style="width:31%"></div></div>
+        </div>
+        <div class="spacer">
+          <div class="gauge-label"><span>Pesticide Reduction</span><span>22–25%</span></div>
+          <div class="gauge-bar"><div class="gauge-fill amber" style="width:25%"></div></div>
+        </div>
+        <div class="spacer">
+          <div class="gauge-label"><span>Disease Detection Accuracy</span><span>95–98%</span></div>
+          <div class="gauge-bar"><div class="gauge-fill green" style="width:97%"></div></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:14px;font-family:var(--mono)">Sensors: Decagon 5TM · Sentek EnviroSCAN · MicaSense RedEdge-MX</p>
+      </div>
+    </div>
+
+    <div class="spacer">
+      <div class="card">
+        <div class="card-title">IIFFS vs. Conventional Practice — Cross-Pillar Comparison</div>
+        <table class="compare-table">
+          <thead><tr><th>Performance Dimension</th><th>Conventional</th><th>IoT-Enabled (IIFFS)</th></tr></thead>
+          <tbody>
+            <tr><td>Cold chain excursion detection</td><td>3.8 hr avg</td><td>&#60;4 min avg</td></tr>
+            <tr><td>Contamination trace time</td><td>6–7 days</td><td>&#60;6 hours</td></tr>
+            <tr><td>Irrigation water use</td><td>Fixed schedule</td><td>−30%</td></tr>
+            <tr><td>Disease detection lead time</td><td>Visible symptoms only</td><td>48–72 hrs early</td></tr>
+            <tr><td>Sensor spoofing mitigation</td><td>Network IDS only</td><td>Physics-aware alert</td></tr>
+            <tr><td>Recall scope precision</td><td>Precautionary broad</td><td>Lot-level targeted</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ COLD CHAIN ═══════════════════════════════════════ -->
+  <div class="section" id="tab-coldchain">
+    <div class="section-title">❄️ Pillar I — Cold Chain Monitoring</div>
+    <div class="section-desc">Real-time sensor data from refrigeration rooms, loading docks, and fleet cargo holds (simulated)</div>
+
+    <div id="cold-alert-banner" class="alert-banner danger" style="display:none">
+      ⚠️ <strong>ALERT:</strong> Temperature excursion detected in <span id="alert-zone"></span>! Threshold breached. Maintenance dispatched.
+    </div>
+
+    <div class="grid-4" id="cold-kpis">
+      <div class="card"><div class="card-title">Avg Temperature</div><div class="metric green" id="avg-temp">3.2°C</div><div class="metric-label">Target: 2–4°C</div></div>
+      <div class="card"><div class="card-title">Avg Humidity</div><div class="metric blue" id="avg-hum">87%</div><div class="metric-label">Target: 85–90%</div></div>
+      <div class="card"><div class="card-title">Active Zones</div><div class="metric green" id="active-zones">14</div><div class="metric-label">Refrigeration rooms</div></div>
+      <div class="card"><div class="card-title">Excursions Today</div><div class="metric amber" id="excursion-count">0</div><div class="metric-label">Threshold breaches</div></div>
+    </div>
+
+    <div class="spacer grid-2">
+      <div class="card">
+        <div class="card-title">Live Zone Readings (DS18B20 / SHT31)</div>
+        <div id="zone-sensors" class="sensor-grid"></div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="refreshCold()">🔄 Refresh Sensors</button>
+          <button class="btn btn-danger" onclick="triggerExcursion()">⚡ Simulate Excursion</button>
+          <button class="btn btn-secondary" onclick="resetCold()">↩ Reset</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Event Log</div>
+        <div class="log-box" id="cold-log"></div>
+      </div>
+    </div>
+
+    <div class="spacer card">
+      <div class="card-title">Fleet Cargo Holds — BME280 Multi-Parameter</div>
+      <table class="data-table" id="fleet-table">
+        <thead><tr><th>Vehicle ID</th><th>Route</th><th>Temp (°C)</th><th>Humidity (%)</th><th>Pressure (hPa)</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TRACEABILITY ═══════════════════════════════════════ -->
+  <div class="section" id="tab-traceability">
+    <div class="section-title">🔗 Pillar II — RFID-Blockchain Traceability</div>
+    <div class="section-desc">Permissioned Hyperledger Fabric ledger. Each transfer event is RFID-recorded and hash-chained.</div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Simulate Trace — Enter Product Lot ID</div>
+        <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+          <input id="lot-input" type="text" placeholder="e.g. LOT-2024-TOM-0042" style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:8px;font-family:var(--mono);font-size:12px;outline:none">
+          <button class="btn btn-primary" onclick="traceLot()">🔍 Trace</button>
+          <button class="btn btn-secondary" onclick="randomLot()">🎲 Random</button>
+        </div>
+        <div id="trace-result" style="font-family:var(--mono);font-size:12px;color:var(--muted)">Enter a lot ID and click Trace to see the full custody chain.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recent RFID Scan Events</div>
+        <div id="rfid-list"></div>
+      </div>
+    </div>
+
+    <div class="spacer card">
+      <div class="card-title">Blockchain Ledger — Last 5 Blocks (Hyperledger Fabric / Simulated)</div>
+      <div class="chain" id="chain-view"></div>
+    </div>
+
+    <div class="spacer card">
+      <div class="card-title">Walmart Food Trust Benchmark</div>
+      <table class="compare-table">
+        <thead><tr><th>Metric</th><th>Paper-Based</th><th>IoT + RFID + Blockchain</th></tr></thead>
+        <tbody>
+          <tr><td>Mango farm-to-store trace</td><td>6.5 days</td><td>2.2 seconds</td></tr>
+          <tr><td>Contaminated batch isolation</td><td>7 days</td><td>&lt;6 hours (97% faster)</td></tr>
+          <tr><td>Average voluntary recall cost</td><td>$10M+</td><td>Targeted — fraction of cost</td></tr>
+          <tr><td>Audit trail integrity</td><td>Paper logbooks (mutable)</td><td>Immutable distributed ledger</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PRECISION AGRI ═══════════════════════════════════════ -->
+  <div class="section" id="tab-precision">
+    <div class="section-title">🌾 Pillar III — Precision Agriculture IoT</div>
+    <div class="section-desc">Soil moisture grid + UAV multispectral disease detection (Decagon 5TM · MicaSense RedEdge-MX)</div>
+
+    <div class="grid-4">
+      <div class="card"><div class="card-title">Avg Soil Moisture</div><div class="metric green" id="avg-moisture">62%</div><div class="metric-label">Decagon 5TM network</div></div>
+      <div class="card"><div class="card-title">Irrigation Saved</div><div class="metric amber" id="irr-saved">31%</div><div class="metric-label">vs. fixed schedule</div></div>
+      <div class="card"><div class="card-title">Disease Alerts</div><div class="metric red" id="disease-count">0</div><div class="metric-label">MicaSense RedEdge-MX</div></div>
+      <div class="card"><div class="card-title">Pesticide Reduction</div><div class="metric green">22%</div><div class="metric-label">Early detection benefit</div></div>
+    </div>
+
+    <div class="spacer grid-2">
+      <div class="card">
+        <div class="card-title">Field Moisture Map (6×6 Grid — Sentek EnviroSCAN)</div>
+        <div class="farm-grid" id="farm-grid"></div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;font-family:var(--mono);color:var(--muted)">Legend:</span>
+          <span style="font-size:11px;font-family:var(--mono)"><span style="color:#4ade80">■</span> Wet (&gt;70%)</span>
+          <span style="font-size:11px;font-family:var(--mono)"><span style="color:#a3e635">■</span> Mid (40–70%)</span>
+          <span style="font-size:11px;font-family:var(--mono)"><span style="color:#fbbf24">■</span> Dry (&lt;40%)</span>
+          <span style="font-size:11px;font-family:var(--mono)"><span style="color:#f87171">■</span> Disease Alert</span>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="refreshFarm()">🔄 New Reading</button>
+          <button class="btn btn-danger" onclick="injectDisease()">🦠 Simulate Blight</button>
+          <button class="btn btn-secondary" onclick="irrigate()">💧 Irrigate Dry Zones</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">UAV Disease Scan Log (MicaSense RedEdge-MX)</div>
+        <div class="log-box" id="agri-log"></div>
+      </div>
+    </div>
+
+    <div class="spacer card">
+      <div class="card-title">Irrigation Controller — Soil Moisture Decision Matrix</div>
+      <table class="data-table" id="irrigation-table">
+        <thead><tr><th>Zone</th><th>Moisture</th><th>Crop Stage</th><th>Forecast Rain</th><th>Action</th><th>Water Saved</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ SENSORS ═══════════════════════════════════════ -->
+  <div class="section" id="tab-sensors">
+    <div class="section-title">📡 Sensor Inventory</div>
+    <div class="section-desc">All hardware sensors used in the IIFFS framework across the three pillars</div>
+
+    <div class="grid-3">
+
+      <div class="card">
+        <div class="card-title">Pillar I — Cold Chain Sensors</div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
+          <div class="sensor-card">
+            <div class="sensor-icon">🌡️</div>
+            <div class="sensor-name">DS18B20</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">Waterproof Temperature Sensor</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Accuracy: ±0.5°C | Protocol: 1-Wire | Use: Refrigeration units</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">💧</div>
+            <div class="sensor-name">DHT22</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">Temperature + Humidity</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Temp: ±0.5°C | RH: ±2% | Use: Warehouses, loading docks</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">🔬</div>
+            <div class="sensor-name">SHT31 (Sensirion)</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">High-Precision Temp + Humidity</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Temp: ±0.3°C | Protocol: I²C | Use: Cold storage facilities</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">🌬️</div>
+            <div class="sensor-name">BME280</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">Temp + Humidity + Barometric Pressure</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Multi-param | Protocol: I²C/SPI | Use: Fleet monitoring</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pillar II — RFID Traceability Hardware</div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
+          <div class="sensor-card">
+            <div class="sensor-icon">📡</div>
+            <div class="sensor-name">Impinj R700</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">UHF RFID Fixed Reader</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Read rate: 1100 tags/sec | Use: Loading docks, warehouses</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">🏷️</div>
+            <div class="sensor-name">NXP UCODE 9</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">UHF Gen2 RFID Tag</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">EPC: 96-bit | Use: Pallet & product labels</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">🚪</div>
+            <div class="sensor-name">Zebra FX9600</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">Fixed RFID Reader — Industrial</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Ports: 4 antenna | Use: Dock doors, conveyor belts</div>
+          </div>
+          <div class="sensor-card" style="background:var(--card)">
+            <div class="sensor-icon">🔗</div>
+            <div class="sensor-name">Hyperledger Fabric</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">Permissioned Blockchain Ledger</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Immutable RFID event logging | IBM Food Trust implementation</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pillar III — Precision Agriculture Sensors</div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
+          <div class="sensor-card">
+            <div class="sensor-icon">🌱</div>
+            <div class="sensor-name">Decagon 5TM</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">Soil Moisture + Temperature</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Reading interval: 15 min | Use: Field moisture grid</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">📏</div>
+            <div class="sensor-name">Sentek EnviroSCAN</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">Multi-Depth Soil Moisture Profiler</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Depths: 10–120 cm | Use: Root-zone moisture tracking</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">📸</div>
+            <div class="sensor-name">MicaSense RedEdge-MX</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">5-Band Multispectral UAV Camera</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Bands: Blue/Green/Red/RedEdge/NIR | Disease accuracy: 95–98%</div>
+          </div>
+          <div class="sensor-card">
+            <div class="sensor-icon">🚁</div>
+            <div class="sensor-name">MPU6050</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">IMU Sensor (Gyro + Accelerometer)</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">6-DoF | Protocol: I²C | Use: UAV flight stabilization</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer card">
+      <div class="card-title">Live Sensor Simulator — All Pillars</div>
+      <div class="sensor-grid" id="all-sensors"></div>
+      <div style="margin-top:14px"><button class="btn btn-primary" onclick="refreshAllSensors()">🔄 Refresh All Readings</button></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  IIFFS Simulation Dashboard — IoT-Based Food Safety & Supply Chain Management | Pratham Garg, Chitkara University, 2025-26
+</footer>
+
+<script>
+// ─── UTILITIES ───────────────────────────────────────────────────────────────
+const rand = (min, max, dec = 1) => parseFloat((Math.random() * (max - min) + min).toFixed(dec));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const now = () => new Date().toLocaleTimeString();
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'coldchain') initCold();
+  if (id === 'traceability') initChain();
+  if (id === 'precision') initFarm();
+  if (id === 'sensors') initAllSensors();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PILLAR I – COLD CHAIN
+// ─────────────────────────────────────────────────────────────────────────────
+const ZONES = ['Room-01', 'Room-02', 'Room-03', 'Room-04', 'Room-05', 'Room-06',
+               'Dock-A', 'Dock-B', 'Dock-C', 'Hold-V1', 'Hold-V2', 'Hold-V3',
+               'Staging-1', 'Staging-2'];
+let excursionCount = 0;
+let coldLogs = [];
+
+function coldLog(msg, type = 'ok') {
+  coldLogs.unshift({ time: now(), msg, type });
+  if (coldLogs.length > 40) coldLogs.pop();
+  renderColdLog();
+}
+
+function renderColdLog() {
+  const box = document.getElementById('cold-log');
+  box.innerHTML = coldLogs.map(l =>
+    `<div class="log-line"><span class="log-time">${l.time}</span><span class="log-msg ${l.type}">${l.msg}</span></div>`
+  ).join('');
+}
+
+function initCold() {
+  coldLogs = [];
+  excursionCount = 0;
+  renderZones();
+  renderFleet();
+  coldLog('System initialised — 14 zones online', 'ok');
+  coldLog('Sensor network connected (DS18B20 + SHT31)', 'info');
+  coldLog('Edge nodes synced — alert thresholds: 2–4°C / 85–90% RH', 'info');
+}
+
+function renderZones() {
+  const grid = document.getElementById('zone-sensors');
+  grid.innerHTML = ZONES.map(z => {
+    const t = rand(2, 4.5);
+    const h = rand(84, 91);
+    const ok = t >= 2 && t <= 4 && h >= 85 && h <= 90;
+    const cls = ok ? 'ok' : (t > 4.5 || h < 83 ? 'alert' : 'warn');
+    const statusText = ok ? '✔ NORMAL' : (cls === 'alert' ? '✖ ALERT' : '⚠ WARNING');
+    return `<div class="sensor-card">
+      <div class="sensor-icon">${z.startsWith('Hold') ? '🚛' : z.startsWith('Dock') ? '🏗️' : '🏭'}</div>
+      <div class="sensor-name">${z}</div>
+      <div class="sensor-value" style="color:var(--accent${cls === 'ok' ? '1' : cls === 'warn' ? '3' : '4'})">${t}°C</div>
+      <div class="sensor-status ${cls}">${statusText} | ${h}% RH</div>
+    </div>`;
+  }).join('');
+  const avgT = (ZONES.reduce(() => rand(2,4.5), 0) / ZONES.length).toFixed(1);
+  document.getElementById('avg-temp').textContent = rand(2.8, 3.8) + '°C';
+  document.getElementById('avg-hum').textContent = rand(86, 89) + '%';
+  document.getElementById('active-zones').textContent = ZONES.length;
+  document.getElementById('excursion-count').textContent = excursionCount;
+}
+
+function renderFleet() {
+  const routes = ['Delhi → Chandigarh', 'Mumbai → Pune', 'Bengaluru → Chennai', 'Kolkata → Bhubaneswar', 'Ahmedabad → Surat'];
+  const tbody = document.querySelector('#fleet-table tbody');
+  tbody.innerHTML = routes.map((r, i) => {
+    const t = rand(2.1, 4.3);
+    const h = rand(85, 90);
+    const p = rand(1010, 1015);
+    const ok = t <= 4;
+    return `<tr>
+      <td><code>VEH-${String(i + 1).padStart(3, '0')}</code></td>
+      <td>${r}</td>
+      <td style="color:var(--accent${ok ? '1' : '4'})">${t}</td>
+      <td>${h}</td>
+      <td>${p}</td>
+      <td><span class="badge ${ok ? 'ok' : 'alert'}">${ok ? 'NORMAL' : 'EXCURSION'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function refreshCold() {
+  renderZones();
+  renderFleet();
+  coldLog('Manual sensor refresh triggered', 'info');
+}
+
+function triggerExcursion() {
+  excursionCount++;
+  document.getElementById('excursion-count').textContent = excursionCount;
+  const zone = pick(ZONES);
+  const t = rand(5.2, 7.8);
+  document.getElementById('cold-alert-banner').style.display = 'flex';
+  document.getElementById('alert-zone').textContent = zone + ' (T=' + t + '°C)';
+  coldLog(`EXCURSION @ ${zone} — Temp ${t}°C exceeds 4°C threshold`, 'alert');
+  coldLog('Edge node fired real-time alert — avg detection: 3.8 min', 'alert');
+  coldLog('Predictive maintenance ticket raised — technician en route', 'warn');
+  setTimeout(() => { coldLog('Compressor serviced — zone temperature stabilising', 'ok'); }, 1800);
+}
+
+function resetCold() {
+  excursionCount = 0;
+  document.getElementById('cold-alert-banner').style.display = 'none';
+  renderZones();
+  renderFleet();
+  coldLog('System reset — all zones nominal', 'ok');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PILLAR II – TRACEABILITY
+// ─────────────────────────────────────────────────────────────────────────────
+const LOTS = ['LOT-2024-TOM-0042', 'LOT-2024-MNG-0017', 'LOT-2025-STR-0088', 'LOT-2025-LET-0031', 'LOT-2024-CHK-0005'];
+const LOCS = ['Farm – Karnataka', 'Processing Plant – Pune', 'Cold Warehouse – Mumbai', 'Distribution Hub – Delhi', 'Retail Store – Chandigarh'];
+const HANDLERS = ['AgriCo Pvt. Ltd.', 'FreshProcess Industries', 'ColdChain Logistics', 'Metro Distribution', 'FoodMart Retail'];
+
+function fakeHash() {
+  const chars = '0123456789abcdef';
+  return Array.from({ length: 64 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+function initChain() {
+  renderRFID();
+  renderChain();
+}
+
+function renderRFID() {
+  const list = document.getElementById('rfid-list');
+  const items = Array.from({ length: 6 }, () => ({
+    tag: 'TAG-' + Math.floor(Math.random() * 90000 + 10000),
+    loc: pick(LOCS),
+    time: now()
+  }));
+  list.innerHTML = items.map(i => `
+    <div class="rfid-row">
+      <div class="rfid-icon">📡</div>
+      <div>
+        <div class="rfid-tag">${i.tag}</div>
+        <div class="rfid-loc">${i.loc}</div>
+      </div>
+      <div class="rfid-time">${i.time}</div>
+    </div>
+  `).join('');
+}
+
+function renderChain() {
+  const chain = document.getElementById('chain-view');
+  const blocks = Array.from({ length: 5 }, (_, i) => ({
+    idx: 1000 + i,
+    hash: fakeHash(),
+    prev: fakeHash(),
+    lot: pick(LOTS),
+    handler: HANDLERS[i],
+    loc: LOCS[i],
+    t: rand(2.0, 4.2),
+    h: rand(85, 90),
+    ts: new Date(Date.now() - (4 - i) * 3600000).toLocaleString()
+  }));
+
+  chain.innerHTML = blocks.map((b, i) => `
+    ${i > 0 ? '<div class="block-arrow">▼</div>' : ''}
+    <div class="block">
+      <div class="block-idx">#${b.idx}</div>
+      <div class="block-hash">Hash: ${b.hash.slice(0, 32)}…</div>
+      ${i > 0 ? `<div class="block-hash" style="color:var(--muted)">Prev: ${b.prev.slice(0, 32)}…</div>` : '<div style="font-size:10px;color:var(--accent1);font-family:var(--mono)">GENESIS BLOCK</div>'}
+      <div class="block-data">📦 ${b.lot} — ${b.handler} — ${b.loc}</div>
+      <div class="block-meta"><span>🌡 ${b.t}°C</span><span>💧 ${b.h}%</span><span>🕐 ${b.ts}</span></div>
+    </div>
+  `).join('');
+}
+
+function traceLot() {
+  const lot = document.getElementById('lot-input').value.trim() || pick(LOTS);
+  document.getElementById('lot-input').value = lot;
+  const steps = LOCS.map((loc, i) => ({
+    loc, handler: HANDLERS[i],
+    time: new Date(Date.now() - (4 - i) * 7200000).toLocaleString(),
+    t: rand(2.0, 4.5), h: rand(85, 90),
+    hash: fakeHash()
+  }));
+  const traceTime = (Math.random() * 1.5 + 1.5).toFixed(1);
+  document.getElementById('trace-result').innerHTML = `
+    <div class="alert-banner info" style="margin-bottom:14px">
+      ⚡ Lot <strong>${lot}</strong> traced in <strong>${traceTime} seconds</strong> (vs 6.5 days with paper)
+    </div>
+    ${steps.map((s, i) => `
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="color:var(--accent2);font-size:18px;min-width:28px">Step ${i + 1}</div>
+        <div>
+          <div style="font-weight:700;font-size:13px">${s.loc}</div>
+          <div style="color:var(--muted);font-size:11px;margin-top:2px">${s.handler} | ${s.time}</div>
+          <div style="color:var(--text);font-size:11px;margin-top:2px">T: ${s.t}°C | RH: ${s.h}% | Hash: <span style="color:var(--accent2)">${s.hash.slice(0, 20)}…</span></div>
+        </div>
+        <span class="badge trace" style="margin-left:auto;white-space:nowrap">RFID VERIFIED</span>
+      </div>
+    `).join('')}
+  `;
+}
+
+function randomLot() {
+  document.getElementById('lot-input').value = pick(LOTS);
+  traceLot();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PILLAR III – PRECISION AGRICULTURE
+// ─────────────────────────────────────────────────────────────────────────────
+let farmCells = [];
+let agriLogs = [];
+let diseaseCount = 0;
+
+function agriLog(msg, type = 'ok') {
+  agriLogs.unshift({ time: now(), msg, type });
+  if (agriLogs.length > 40) agriLogs.pop();
+  renderAgriLog();
+}
+
+function renderAgriLog() {
+  const box = document.getElementById('agri-log');
+  box.innerHTML = agriLogs.map(l =>
+    `<div class="log-line"><span class="log-time">${l.time}</span><span class="log-msg ${l.type}">${l.msg}</span></div>`
+  ).join('');
+}
+
+function initFarm() {
+  agriLogs = [];
+  diseaseCount = 0;
+  generateFarm();
+  renderIrrigationTable();
+  agriLog('Decagon 5TM network online — 36 nodes', 'info');
+  agriLog('MicaSense RedEdge-MX UAV scan scheduled', 'info');
+  agriLog('Weather forecast: no rain next 6 hours — irrigation recommended', 'warn');
+}
+
+function generateFarm() {
+  farmCells = Array.from({ length: 36 }, () => {
+    const m = rand(20, 95, 0);
+    return { moisture: m, type: m > 70 ? 'wet' : m > 40 ? 'mid' : 'dry', disease: false };
+  });
+  renderFarmGrid();
+  const avg = Math.round(farmCells.reduce((s, c) => s + c.moisture, 0) / 36);
+  document.getElementById('avg-moisture').textContent = avg + '%';
+  document.getElementById('disease-count').textContent = diseaseCount;
+}
+
+function renderFarmGrid() {
+  const grid = document.getElementById('farm-grid');
+  const emojis = { wet: '🌿', mid: '🌱', dry: '🟫', alert: '🦠' };
+  grid.innerHTML = farmCells.map((c, i) =>
+    `<div class="farm-cell ${c.disease ? 'alert' : c.type}" title="Zone ${i + 1}: ${c.moisture}% moisture${c.disease ? ' — DISEASE ALERT' : ''}">${emojis[c.disease ? 'alert' : c.type]}</div>`
+  ).join('');
+}
+
+function refreshFarm() {
+  diseaseCount = 0;
+  generateFarm();
+  agriLog('Sensor refresh — new soil moisture readings received', 'info');
+  renderIrrigationTable();
+}
+
+function injectDisease() {
+  const count = Math.floor(Math.random() * 3 + 1);
+  let added = 0;
+  while (added < count) {
+    const idx = Math.floor(Math.random() * 36);
+    if (!farmCells[idx].disease) { farmCells[idx].disease = true; diseaseCount++; added++; }
+  }
+  renderFarmGrid();
+  document.getElementById('disease-count').textContent = diseaseCount;
+  agriLog(`UAV scan detected blight in ${count} grid cells — alert raised`, 'alert');
+  agriLog('Targeted fungicide treatment scheduled for affected zones only', 'warn');
+  agriLog('Broad-spectrum pesticide spray avoided — 22% input saving', 'ok');
+}
+
+function irrigate() {
+  farmCells = farmCells.map(c => c.type === 'dry' && !c.disease ? { ...c, moisture: rand(55, 70, 0), type: 'mid' } : c);
+  renderFarmGrid();
+  const avg = Math.round(farmCells.reduce((s, c) => s + c.moisture, 0) / 36);
+  document.getElementById('avg-moisture').textContent = avg + '%';
+  agriLog('Variable-rate drip irrigation triggered for dry zones only', 'info');
+  agriLog('Water saved vs fixed schedule: ~31%', 'ok');
+  document.getElementById('irr-saved').textContent = rand(28, 33) + '%';
+}
+
+function renderIrrigationTable() {
+  const zones = ['North Block', 'South Block', 'East Block', 'West Block', 'Central Grid', 'Greenhouse'];
+  const stages = ['Germination', 'Vegetative', 'Flowering', 'Fruiting', 'Harvest-Ready'];
+  const tbody = document.querySelector('#irrigation-table tbody');
+  tbody.innerHTML = zones.map(z => {
+    const m = rand(20, 90, 0);
+    const stage = pick(stages);
+    const rain = Math.random() > 0.5 ? 'Yes (6hr)' : 'No';
+    const needsWater = m < 45 && rain === 'No';
+    const action = needsWater ? '💧 Irrigate' : (rain !== 'No' ? '⏭ Skip (Rain)' : '✅ Adequate');
+    const saved = needsWater ? '0L' : rain !== 'No' ? rand(200, 600, 0) + 'L' : rand(50, 150, 0) + 'L';
+    return `<tr>
+      <td>${z}</td>
+      <td style="color:var(--accent${m > 70 ? '1' : m > 40 ? '3' : '4'})">${m}%</td>
+      <td>${stage}</td>
+      <td>${rain}</td>
+      <td><span class="badge ${needsWater ? 'warn' : 'ok'}">${action}</span></td>
+      <td style="color:var(--accent1)">${saved}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ALL SENSORS
+// ─────────────────────────────────────────────────────────────────────────────
+function initAllSensors() { refreshAllSensors(); }
+
+function refreshAllSensors() {
+  const sensors = [
+    { icon: '🌡️', name: 'DS18B20', value: rand(2, 4.5) + '°C', status: 'ok', label: 'Cold Storage P1' },
+    { icon: '💧', name: 'DHT22 (I)', value: rand(2.1, 4.3) + '°C', status: 'ok', label: 'Loading Dock A' },
+    { icon: '💧', name: 'DHT22 (II)', value: rand(85, 91) + '%', status: 'ok', label: 'Warehouse RH' },
+    { icon: '🔬', name: 'SHT31', value: rand(2.0, 4.2) + '°C', status: 'ok', label: 'Cold Storage P2' },
+    { icon: '🌬️', name: 'BME280', value: rand(1010, 1015) + ' hPa', status: 'ok', label: 'Fleet Hold V2' },
+    { icon: '📡', name: 'Impinj R700', value: rand(800, 1100, 0) + '/s', status: 'ok', label: 'RFID Read Rate' },
+    { icon: '🏷️', name: 'NXP UCODE 9', value: rand(240, 280, 0) + ' tags', status: 'ok', label: 'Active Tags' },
+    { icon: '🏭', name: 'Zebra FX9600', value: rand(3, 8, 0) + ' reads/min', status: 'ok', label: 'Dock Door C' },
+    { icon: '🌱', name: 'Decagon 5TM', value: rand(40, 75, 0) + '%', status: Math.random() > .75 ? 'warn' : 'ok', label: 'Soil Zone 3' },
+    { icon: '📏', name: 'EnviroSCAN', value: rand(35, 80, 0) + '%', status: 'ok', label: 'Root Zone –40cm' },
+    { icon: '📸', name: 'RedEdge-MX', value: 'NDVI ' + rand(0.6, 0.85), status: 'ok', label: 'UAV Scan' },
+    { icon: '🚁', name: 'MPU6050', value: rand(0, 3) + '° roll', status: 'ok', label: 'UAV IMU' },
+  ];
+  const grid = document.getElementById('all-sensors');
+  grid.innerHTML = sensors.map(s => `
+    <div class="sensor-card">
+      <div class="sensor-icon">${s.icon}</div>
+      <div class="sensor-name">${s.name}</div>
+      <div class="sensor-value" style="color:var(--accent${s.status === 'ok' ? '1' : '3'})">${s.value}</div>
+      <div class="sensor-status ${s.status}">${s.label}</div>
+    </div>
+  `).join('');
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+initCold();
+</script>
+</body>
+</html>
